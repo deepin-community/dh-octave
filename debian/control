@@ -1,0 +1,52 @@
+Source: dh-octave
+Maintainer: Debian Octave Group <team+pkg-octave-team@tracker.debian.org>
+Uploaders: Sébastien Villemot <sebastien@debian.org>,
+           Rafael Laboissière <rafael@debian.org>,
+           Mike Miller <mtmiller@debian.org>
+Section: devel
+Priority: optional
+Build-Depends: debhelper-compat (= 13),
+               libparse-debcontrol-perl,
+               dh-exec,
+               octave,
+               shunit2
+Standards-Version: 4.6.1
+Vcs-Browser: https://salsa.debian.org/pkg-octave-team/dh-octave
+Vcs-Git: https://salsa.debian.org/pkg-octave-team/dh-octave.git
+Rules-Requires-Root: no
+
+Package: dh-octave
+Provides: dh-sequence-octave
+Architecture: all
+Depends: octave-dev,
+         debhelper-compat (= 13),
+         cme,
+         libconfig-model-dpkg-perl,
+         libparse-debcontrol-perl,
+         libmime-tools-perl,
+         libfile-find-rule-perl,
+         dh-octave-autopkgtest,
+         ${misc:Depends},
+         ${perl:Depends}
+Description: Debhelper-based infrastructure for building Octave add-on packages
+ Since version 3.0 of Octave (a numerical computation software),
+ add-ons can be installed through the pkg.m system.  This package
+ provides the infrastructure for packaging such add-ons for Debian,
+ based on debhelper.  It replaces the deprecated octave-pkg-dev
+ package. This package contains debhelper-like scripts for building,
+ checking and cleaning the add-on package as well as for generating
+ the substitution variables in debian/control.
+ .
+ This package is intended to be used by the Debian Octave Group
+ and should be of little interest to general users.
+
+Package: dh-octave-autopkgtest
+Architecture: all
+Depends: gnuplot-nox,
+         fonts-freefont-otf,
+         ${misc:Depends}
+Description: script for the automatic testing of Octave add-on packages
+ This package contains the dh_octave_check script that runs the unit tests
+ contained in all *.m and *.cc files available in the source tree from
+ which it is launched.  It is intended to be used by the support for
+ Octave-Forge add-on packages, which is implemented in autodep8.

@@ -1,0 +1,278 @@
+dh-octave (1.2.0) UNRELEASED; urgency=medium
+
+  * update
+
+ -- Debian Octave Group <team+pkg-octave-team@tracker.debian.org>  Thu, 16 Jun 2022 11:35:01 +0800
+
+dh-octave (1.2.0) unstable; urgency=medium
+
+  [ Nicolas Boulenguez ]
+  * d/control: let dh-octave provide dh-sequence-octave (Closes: #1011556)
+  * install-pkg.m: implement non-octave parts with perl’s Dh_Lib
+  * buildsystem.pm: use debhelper’s tmpdir instead of debian/sourcepackage
+  * dh scripts: document how which script is enabled
+
+  [ Rafael Laboissière ]
+  * buildsystem.pm:
+    + Use Debian::Debhelper::Dh_Lib
+    + Avoid wildcards in doit calls
+    + Check whether directories exist before acting on them
+  * dh_octave_make.in: Use dh-sequence-octave in Build-Depends
+  * d/control: Bump Standards-Version to 4.6.1 (no changes needed)
+  * Update copyright years
+  * README.md: Document the use of the virtual package dh-sequence-octave
+
+ -- Rafael Laboissière <rafael@debian.org>  Tue, 31 May 2022 08:14:25 -0300
+
+dh-octave (1.1.0) unstable; urgency=medium
+
+  [ Sébastien Villemot ]
+  * d/control: liboctave-dev has been renamed to octave-dev
+
+  [ Rafael Laboissière ]
+  * d/control: Bump Standards-Version to 4.6.0 (no changes needed)
+
+ -- Rafael Laboissière <rafael@debian.org>  Thu, 20 Jan 2022 04:51:44 -0300
+
+dh-octave (1.0.5) unstable; urgency=medium
+
+  * Upload to unstable
+
+ -- Rafael Laboissière <rafael@debian.org>  Sun, 15 Aug 2021 03:37:30 -0300
+
+dh-octave (1.0.4) experimental; urgency=medium
+
+  * dh_octave_make.in: Create the debian/gbp.conf file
+
+ -- Rafael Laboissière <rafael@debian.org>  Mon, 09 Aug 2021 03:07:32 -0300
+
+dh-octave (1.0.3) unstable; urgency=medium
+
+  * d/control: Bump Standards-Version to 4.5.1 (no changes needed)
+  * install-pkg.m:
+    + Drop useless calls to sprintf
+    + Remove left over files *-tst
+
+ -- Rafael Laboissière <rafael@debian.org>  Wed, 30 Dec 2020 12:54:46 -0300
+
+dh-octave (1.0.2) unstable; urgency=medium
+
+  * dh_octave_changelogs: Use max compression for gzip.
+    This avoids the Lintian warning
+    changelog-not-compressed-with-max-compression, regarding the upstream
+    file ChangeLog.gz.
+
+ -- Rafael Laboissière <rafael@debian.org>  Tue, 10 Nov 2020 10:10:21 -0300
+
+dh-octave (1.0.1) unstable; urgency=medium
+
+  * Source-only upload, so that the package can migrate into testing
+
+ -- Rafael Laboissière <rafael@debian.org>  Fri, 09 Oct 2020 13:14:25 -0300
+
+dh-octave (1.0.0) unstable; urgency=medium
+
+  * Release new version 1.0.0.  No changes are made in the package.  The
+    version number just reflects the fact that dh-octave is now mature.
+
+ -- Rafael Laboissière <rafael@debian.org>  Sat, 26 Sep 2020 09:40:54 -0300
+
+dh-octave (0.7.6) unstable; urgency=medium
+
+  * d/control: Bump debhelper compatibitlity level to 13
+  * dh_octave_check: Use mktemp instead of deprecated tempfile
+
+ -- Rafael Laboissière <rafael@debian.org>  Fri, 29 May 2020 10:31:49 -0300
+
+dh-octave (0.7.5) unstable; urgency=medium
+
+  * install-pkg.m: Make installed *.mex files non-executable
+
+ -- Rafael Laboissière <rafael@debian.org>  Tue, 14 Apr 2020 19:55:38 -0300
+
+dh-octave (0.7.4) unstable; urgency=medium
+
+  * install-pkg.m: Make installed *.oct files non-executable.
+    This complies with FHS 3.0 (sections 4.6 and 4.7), which has been
+    adopted by the Debian Policy.
+  * dh_octave_make.in: Create the debian/upstream/metadata file
+  * d/copyright: Update copyright years
+
+ -- Rafael Laboissière <rafael@debian.org>  Sat, 28 Mar 2020 17:50:51 -0300
+
+dh-octave (0.7.3) unstable; urgency=medium
+
+  * d/control: Depends on libconfig-model-dpkg-perl.
+    This is necessary for having cme's model for application
+    "dpkg-copyright". This allows the proper generation of file
+    debian/copyright by dh_octave_make.
+  * Proper specification of the debhelper compatibility level.
+    The dh_octave_make script adds now the appropriate build-dependency on
+    "debhelper-compat (= <level>)", instead of using the old method via
+    the debian/compat file.
+  * dh_make_octave now adds "Rules-Requires-Root: no" to debian/control
+  * d/control: Bump Standards-Version to 4.5.0 (no changes needed)
+  * README.md:
+    + Fix position of dh_octave_substvar
+    + Invert column order in table for dh-octave commands
+    + Add mention to debian/checkvars
+
+ -- Rafael Laboissière <rafael@debian.org>  Sun, 09 Feb 2020 07:06:04 -0300
+
+dh-octave (0.7.2) unstable; urgency=medium
+
+  * sequence.pm: Insert dh_octave_substvar before dh_installdeb.
+    The previous code, where dh_octave_substvar was insert after
+    dh_shlibdeps, was failing for packages with "Architecture: all", for
+    which dh_shlibdeps is not in the dh binary sequence.
+
+ -- Rafael Laboissiere <rafael@debian.org>  Mon, 04 Nov 2019 09:01:55 -0300
+
+dh-octave (0.7.1) unstable; urgency=medium
+
+  * dh_octave_substvar: Drop useless import of module Dpkg::Version
+  * d/control: Add lacking dependency on libfile-find-rule-perl
+
+ -- Rafael Laboissiere <rafael@debian.org>  Sat, 02 Nov 2019 08:56:28 -0300
+
+dh-octave (0.7.0) unstable; urgency=medium
+
+  * d/control: Bump Standards-Version to 4.4.1 (no changes needed)
+  * dh_octave_substvar: Inject dependency on virtual package octave-abi-N
+
+ -- Rafael Laboissiere <rafael@debian.org>  Thu, 31 Oct 2019 17:38:53 -0300
+
+dh-octave (0.6.2) unstable; urgency=medium
+
+  * d/control:
+    + Bump Standards-Version to 4.3.0 (no changes needed)
+    + Bump to debhelper compat level 12
+  * Build-depend on debhelper-compat instead of using d/compat
+
+ -- Rafael Laboissiere <rafael@debian.org>  Wed, 02 Jan 2019 22:51:32 -0200
+
+dh-octave (0.6.1) unstable; urgency=medium
+
+  * d/control: Bump Standards-Version to 4.2.1 (no changes needed)
+  * sequence.pm: Honour nocheck in DEB_BUILD_MAINT_OPTIONS environment variable
+
+ -- Rafael Laboissiere <rafael@debian.org>  Sat, 03 Nov 2018 09:18:26 -0300
+
+dh-octave (0.6.0) unstable; urgency=medium
+
+  * d/control:
+    + Add Rules-Requires-Root: no
+    + Bump Standards-Version to 4.2.0
+  * dh_octave_check: Honor DEB_BUILD_OPTIONS=terse
+
+ -- Rafael Laboissiere <rafael@debian.org>  Wed, 08 Aug 2018 02:49:46 -0300
+
+dh-octave (0.5.6) unstable; urgency=medium
+
+  * dh_octave_check: Use lowercase name of the package
+  * d/control: Bump Standards-Version to 4.1.5 (no changes needed)
+
+ -- Rafael Laboissiere <rafael@debian.org>  Thu, 12 Jul 2018 09:39:40 -0300
+
+dh-octave (0.5.5) unstable; urgency=medium
+
+  * dh_octave_substvar: Add epoch number to versioned dependencies
+    (Closes: #893900)
+  * dh_octave_check:
+    + Test the actual C++ file found in the src tree
+    + Ditto for the .m file
+    + Introduce option --use-installed-package
+
+ -- Rafael Laboissiere <rafael@debian.org>  Tue, 10 Jul 2018 07:20:57 -0300
+
+dh-octave (0.5.4) unstable; urgency=medium
+
+  * dh_octave_check: Do not load the package being currently tested
+
+ -- Rafael Laboissiere <rafael@debian.org>  Fri, 06 Jul 2018 04:01:11 -0300
+
+dh-octave (0.5.3) unstable; urgency=medium
+
+  * dh-octave-autopkgtests now Depends on fonts-freefont-otf.
+    The autopkgtest environment is exactly the sort of minimal environment
+    where normal Fontconfig matching fails, so ensure the fallback font
+    files are installed.
+  * Enfore C locale in test_dh_octave.sh
+
+ -- Sébastien Villemot <sebastien@debian.org>  Mon, 11 Jun 2018 19:36:41 +0200
+
+dh-octave (0.5.2) unstable; urgency=medium
+
+  * dh_octave_check: Fix logical precedence in find command
+
+ -- Rafael Laboissiere <rafael@debian.org>  Thu, 17 May 2018 04:47:36 -0300
+
+dh-octave (0.5.1) unstable; urgency=medium
+
+  * dh_octave_check: Also extract unit tests from *.cpp files
+
+ -- Rafael Laboissiere <rafael@debian.org>  Wed, 09 May 2018 05:10:41 -0300
+
+dh-octave (0.5.0) unstable; urgency=medium
+
+  * dh_octave_check:
+    + Read extra variables definitions from d/checkvars
+    + Document the available environment variables
+
+ -- Rafael Laboissiere <rafael@debian.org>  Sat, 05 May 2018 04:27:01 -0300
+
+dh-octave (0.4.0) unstable; urgency=medium
+
+  * Add unit test suite (for use at build time and for autopkgtest)
+  * dh_octave_check:
+    + Give feedback on the script failure
+    + Add local path before loading all the installed packages.
+      Thanks to Sébastien Villemot for the fix
+  * d/control: Bump Standards-Version to 4.1.4 (no changes needed)
+  * dh_octave_examples: New helper script for installing upstream examples
+
+ -- Rafael Laboissiere <rafael@debian.org>  Sun, 29 Apr 2018 12:16:05 -0300
+
+dh-octave (0.3.2) unstable; urgency=medium
+
+  [ Mike Miller ]
+  * Documentation:
+    + Fix POD syntax to be consistent with debhelper.
+    + Fix documentation formatting and spelling.
+  * Makefile: Include package name and version in man pages.
+  * dh_octave_make:
+    + Use secure URL for Homepage control field.
+    + Append a newline to generated debian/compat.
+    + Escape make variable in generated debian/rules.
+    + Fill Uploaders correctly in generated debian/control.
+    + Use team+pkg-octave-team@tracker.d.o as the Maintainer.
+
+ -- Rafael Laboissiere <rafael@debian.org>  Sun, 18 Feb 2018 06:09:34 -0300
+
+dh-octave (0.3.1) unstable; urgency=medium
+
+  * dh_octave_check:
+    + Fix file redirection
+    + Capture results of debian/check.m
+    + Use file name of *.cc as argument of test
+
+ -- Rafael Laboissiere <rafael@debian.org>  Fri, 09 Feb 2018 19:57:34 -0200
+
+dh-octave (0.3.0) unstable; urgency=medium
+
+  * d/control: Add dependency libmime-tools-perl
+
+ -- Rafael Laboissiere <rafael@debian.org>  Thu, 08 Feb 2018 15:00:59 -0200
+
+dh-octave (0.2.0) unstable; urgency=medium
+
+  * d/control: Change Maintainer to team+pkg-octave-team@tracker.debian.org
+  * README.md: Add section on the internals of dh-octave
+
+ -- Rafael Laboissiere <rafael@debian.org>  Sun, 04 Feb 2018 10:04:56 -0200
+
+dh-octave (0.1.0) unstable; urgency=low
+
+  * Initial release (Closes: #887097)
+
+ -- Rafael Laboissiere <rafael@debian.org>  Mon, 15 Jan 2018 20:18:14 -0200

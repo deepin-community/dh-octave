@@ -1,0 +1,11 @@
+#!/usr/bin/dh-exec
+
+buildsystem.pm =>	usr/share/perl5/Debian/Debhelper/Buildsystem/octave.pm
+sequence.pm =>		usr/share/perl5/Debian/Debhelper/Sequence/octave.pm
+install-pkg.m		usr/share/dh-octave/
+dh_octave_clean		usr/bin/
+dh_octave_substvar	usr/bin/
+dh_octave_make		usr/bin/
+dh_octave_version	usr/bin/
+dh_octave_changelogs	usr/bin/
+dh_octave_examples	usr/bin/

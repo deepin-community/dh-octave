@@ -1,0 +1,279 @@
+#!/usr/bin/perl
+# dh_octave_make: Generate a Debian package from the sources of
+#     an Octave-Forge package from scratch
+# This file is part of the dh-octave Debian package
+
+# Copyright (c) 2012, 2017-2022  Rafael Laboissière <rafael@debian.org>
+#
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License along
+# with this program; if not, write to the Free Software Foundation,
+# Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301, USA.
+
+=encoding utf8
+
+=head1 NAME
+
+dh_octave_make - generate a Debian package from the sources of an Octave-Forge package
+
+=head1 SYNOPSIS
+
+B<dh_octave_make>
+
+=head1 DESCRIPTION
+
+B<dh_octave_make> is a helper script for generating a first
+version of a Debian package for an Octave-Forge package. The command should
+be launched from the top directory of the unpacked sources of an
+Octave-Forge package.  A file called F<DESCRIPTION> must be present, from
+which information about the package is gathered.  The following files
+are generated with sensible contents, although they need further editing:
+
+=over
+
+=item debian/changelog
+
+=item debian/control
+
+=item debian/copyright
+
+=item debian/rules
+
+=item debian/source/format
+
+=item debian/upstream/metadata
+
+=item debian/watch
+
+=item deabin/gbp.conf
+
+=back
+
+The files above are only created if they do not exist yet.  This allows
+the use of B<dh_octave_make> for updating an already
+debianized source tree.
+
+=head1 ENVIRONMENT VARIABLES
+
+The environment variables B<DEBFULLNAME> and B<DEBEMAIL> are used for
+generating the identity of the developer, which will appear in
+F<debian/changelog> and F<debian/copyright>. If they do not exist, B<FULLNAME>
+and B<EMAIL> are used instead.
+
+=head1 DISCLAIMER
+
+B<dh_octave_make> is distributed in the hope that it will be useful,
+but B<without any warranty>; without even the implied warranty of
+B<merchantability> or B<fitness for a particular purpose>.
+
+=head1 COPYRIGHT
+
+Copyright 2012, 2017-2021 Rafael Laboissière
+
+This script is free software; you can redistribute it and/or
+modify it under the terms of the GNU GPL, v3 or later.
+
+=head1 AUTHOR
+
+Rafael Laboissière E<lt>rafael@debian.orgE<gt>
+
+=cut
+
+### Get program name
+(my $prog = $0) =~ s|.*/||;
+
+### Function for yelling on errrors
+sub croak ($) {
+    my $message = shift;
+    die "$prog:E: $message\n"
+}
+
+### The pkgdata hash will store the data in the DESCRIPTION file
+my %pkgdata;
+
+### Function for creating a directory if it does not exist yet
+sub makedir ($) {
+    my $dir = shift;
+    -d $dir or mkdir $dir;
+}
+
+### Function for opening a file and adding content to it
+sub writefile ($$$) {
+    my $mode = shift;
+    my $file = shift;
+    return if mode != "<<" and -e $file;
+    my $content = shift;
+    open (FID, $mode, $file);
+    print FID $content;
+    close FID;
+}
+
+### Check whether a given field exists in the DESCRIPTION file and exit the
+### program with an error message, in the case the field does not exist
+sub check ($) {
+    my $field = shift;
+    exists $pkgdata{$field} or croak "$field not found in DESCRIPTION";
+}
+
+### File DESCRIPTION is not present.  Yell loudly.
+-f "DESCRIPTION" or croak "File DESCRIPTION not found";
+
+### Read the fields present in the DESCRIPTION file
+open (FID, "< DESCRIPTION");
+/([^:]+): (.*)/ and $pkgdata{$1} = $2 while (<FID>);
+close FID;
+
+### Check for some mandatory fields
+check ("Name");
+my $name = lc $pkgdata{Name};
+check ("Version");
+my $version = $pkgdata{Version};
+check ("Title");
+my $title = $pkgdata{Title};
+check ("Maintainer");
+my $maintainer = $pkgdata{Maintainer};
+
+### Decide on the package's Architecture based on the presence of the src/
+### directory, which typically contains C++ files to be compiled.
+my $architecture = -d "src" ? "any" : "all";
+
+### Create the debian/ directory, if it does not exist.
+makedir "debian";
+
+### Get the debhelper compatibility level
+my $compat = #Compat#;
+
+### Create the debian/watch file.
+writefile (">", "debian/watch",
+           "version=4
+http://sf.net/octave/$name-(.+)\\.tar\\.gz
+");
+
+### Create the debian/changelog file.
+my $date = qx {date --rfc-2822};
+chomp $date;
+my $developer = exists $ENV{DEBFULLNAME} ? $ENV{DEBFULLNAME}
+                : exists $ENV{FULLNAME} ? $ENV{FULLNAME}
+                : "Joe Developer";
+my $email = exists $ENV{DEBEMAIL} ? $ENV{DEBEMAIL}
+                : exists $ENV{EMAIL} ? $ENV{EMAIL}
+                : "joe\@developer.org";
+my $author = "$developer <$email>";
+
+writefile (">", "debian/changelog",
+           "octave-$name ($version-1) UNRELEASED; urgency=low
+
+  * Initial release (closes: #XXXXXX)
+
+ -- $author  $date
+");
+
+### Create the debian/rules file.
+writefile (">", "debian/rules",
+           "#!/usr/bin/make -f
+# -*- makefile -*-
+
+%:
+	dh \$@ --buildsystem=octave
+");
+system ("chmod +x debian/rules");
+
+### Create the debian/control file.
+my $uploaders = "#Uploaders#";
+if ($uploaders ne "") {
+    $uploaders = "Uploaders: $uploaders
+";
+}
+
+my $shlibs = "";
+if ($architecture eq "any") {
+    $shlibs = ", \${shlibs:Depends}";
+}
+
+writefile (">", "debian/control",
+           "Source: octave-$name
+Section: math
+Priority: optional
+Maintainer: Debian Octave Group <team+pkg-octave-team\@tracker.debian.org>
+${uploaders}Build-Depends: debhelper-compat (= $compat), dh-octave (>= #Version#), dh-sequence-octave
+Standards-Version: #Standards-Version#
+Homepage: https://octave.sourceforge.io/$name/
+Vcs-Git: #Vcs-Git#
+Vcs-Browser: #Vcs-Browser#
+Testsuite: autopkgtest-pkg-octave
+Rules-Requires-Root: no
+
+Package: octave-$name
+Architecture: $architecture
+Depends: \${misc:Depends}, \${octave:Depends}$shlibs
+Description: $title
+ \${octave:Upstream-Description}
+ .
+ This Octave add-on package is part of the Octave-Forge project.
+");
+
+### Create the debian/source/format file.
+makedir "debian/source";
+writefile (">", "debian/source/format", "3.0 (quilt)\n");
+
+### Create the debian/copyright file.
+unless (-e "debian/copyright") {
+
+    ## Add the automated part from cme
+    system ("cme update dpkg-copyright");
+
+    ## Create the Debian specific part to the debian/control file.
+    my $year = qx {date +%Y};
+    chomp $year;
+
+    writefile (">>", "debian/copyright",
+	       "Files: debian/*
+Copyright: $year $author
+License: GPL-3+
+
+License: GPL-3+
+ This program is free software; you can redistribute it and/or modify
+ it under the terms of the GNU General Public License as published by
+ the Free Software Foundation, either version 3 of the License, or
+ (at your option) any later version.
+ .
+ This program is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ GNU General Public License for more details.
+ .
+ You should have received a copy of the GNU General Public License along
+ with this program.  If not, see <http://www.gnu.org/licenses/>.
+ .
+ On Debian systems, the complete text of the GNU General Public
+ License, version 3, can be found in the file
+ `/usr/share/common-licenses/GPL-3'.
+");
+
+}
+
+### Create the debian/upstream/metadata file.
+makedir "debian/upstream";
+writefile (">", "debian/upstream/metadata",
+    "Name: $title
+Contact: $maintainer
+Bug-Database: https://savannah.gnu.org/bugs/?group=octave
+Bug-Submit: https://savannah.gnu.org/bugs/?func=additem&group=octave
+Repository-Browse: https://octave.sourceforge.io/pkg-repository/$name/
+");
+
+### Create the debian/gbp.conf file.
+writefile (">", "debian/gbp.conf", "[DEFAULT]
+debian-branch = debian/latest
+upstream-branch = upstream/latest
+pristine-tar = True
+");

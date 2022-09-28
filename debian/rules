@@ -1,0 +1,7 @@
+#!/usr/bin/make -f
+# -*- makefile -*-
+#
+# debian/rules for the dh-octave Debian package
+
+%:
+	dh $@

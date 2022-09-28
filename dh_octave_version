@@ -1,0 +1,76 @@
+#!/bin/sh
+
+# Copyright © 2018 Rafael Laboissière <rafael@debian.org>
+#
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License along
+# with this program; if not, write to the Free Software Foundation,
+# Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301, USA.
+
+: <<=cut
+
+=encoding utf8
+
+=head1 NAME
+
+dh_octave_version - check Octave version dependency for an Octave-Forge package
+
+=head1 SYNOPSIS
+
+B<dh_octave_version>
+
+=head1 DESCRIPTION
+
+B<dh_octave_version> is intended to be run from the top-level source
+directory of an Octave add-on package.  It checks whether the version
+of the Octave program installed in the system satisfies the dependency
+specified in the package's F<DESCRIPTION> file.
+
+=head1 SEE ALSO
+
+L<debhelper(7)>, L<dh(1)>, L<dh_octave_substvar(1)>, L<dh_octave_clean(1)>,
+L<dh_octave_check(1)>, L<dh_octave_changelogs(1)>, L<dh_octave_examples(1)>
+
+This program is meant to be used together with debhelper for Debian
+packages derived from Octave-Forge packages.
+It is recommended to enable it by adding the dh-sequence-octave
+virtual package to Build-Depends, Build-Depends-Arch or
+Build-Depends-Indep.
+This is equivalent to adding dh-octave to the same field and adding
+--with=octave to the dh sequencer in debian/rules, except that only
+-arch/-indep/profiled builds are affected.
+This is also slightly more simple in the most common case.
+
+=head1 AUTHOR
+
+Rafael Laboissière <rafael@debian.org>
+
+=cut
+
+echo -n "Checking the Octave version... "
+
+version=$(octave-config -p VERSION | sed 's/-rc/~rc/')
+
+dep=$(grep Depends DESCRIPTION	\
+      | perl -ne 'if (/octave\s+\(>=\s*([.\d]+)\)/i) {print $1}')
+
+if [ "$dep" != "" ] ; then
+    if dpkg --compare-versions "$version" lt "$dep" ; then
+        echo ;
+        echo "Octave version mismatch: "		\
+             "Needs >= $dep, but version "		\
+             "$version is installed" 1>&2 ;
+        exit 1
+    fi
+fi
+
+echo ok

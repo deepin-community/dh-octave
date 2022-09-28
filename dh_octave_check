@@ -1,0 +1,265 @@
+#!/bin/sh
+
+# dh_octave_check: Automate checking of Octave-Forge Debian packages
+# This file is part of the dh-octave Debian package and was also part
+# of the deprecated octave-pkg-dev package.
+
+# Copyright (c) 2018  Rafael Laboissière <rafael@debian.org>
+#
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License along
+# with this program; if not, write to the Free Software Foundation,
+# Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301, USA.
+
+: <<=cut
+
+=encoding utf8
+
+=head1 NAME
+
+dh_octave_check - automatically run an Octave-Forge package test suite
+
+=head1 SYNOPSIS
+
+B<dh_octave_check>
+
+=head1 DESCRIPTION
+
+B<dh_octave_check> performs the automated tests present in both F<*.m>
+and C++ files in the sub-directories of the current directory, which
+should be the top-level source directory of an Octave add-on package.
+It also runs the script F<debian/check.m>, if it exists.
+
+=head1 ENVIRONMENT VARIABLES
+
+Some aspects of the execution of B<dh_octave_check> can be controlled
+through the environment variables listed below.  These variables can
+also be set in file C<debian/checkvars>, which is sourced by
+B<dh_octave_check>.
+
+=over
+
+=item DH_OCTAVE_EXCLUDE_TEST
+
+A space-separated list with the the names of the files whose unit
+tests should not be run.
+
+=item DH_OCTAVE_TEST_OPT
+
+The optional second argument for Octave’s test function.  Allowed
+values are C<"quiet">, C<"normal">, and C<"verbose">.
+
+=item DH_OCTAVE_TEST_ENV
+
+Prefix for calling the Octave command.  It can be used for setting
+environment variables to Sensible values (for instance
+C<"LD_PRELOAD=">) and specifying another program under which Octave
+must be run (like C<"xvfb-run">).
+
+=item octave
+
+Name of the Octave binary to run (defaults to C<"octave-cli">).
+
+=item octave_options
+
+Command line options for Octave (defaults to C<"--no-history --silent
+--no-init-file --no-window-system">).
+
+=back
+
+=head1 SEE ALSO
+
+L<debhelper(7)>, L<dh(1)>, L<dh_octave_substvar(1)>, L<dh_octave_clean(1)>,
+L<dh_octave_version(1)>, L<dh_octave_changelogs(1)>, L<dh_octave_examples(1)>
+
+This program is meant to be used together with debhelper for Debian
+packages derived from Octave-Forge packages.
+It is recommended to enable it by adding the dh-sequence-octave
+virtual package to Build-Depends, Build-Depends-Arch or
+Build-Depends-Indep.
+This is equivalent to adding dh-octave to the same field and adding
+--with=octave to the dh sequencer in debian/rules, except that only
+-arch/-indep/profiled builds are affected.
+This is also slightly more simple in the most common case.
+
+=head1 AUTHOR
+
+Rafael Laboissière <rafael@debian.org>
+
+=cut
+
+# Get the current Octave package name
+package=$(grep ^Name: DESCRIPTION | sed -e 's/Name: \(.*\)/\L\1/')
+
+# Process the options.  Currently, only --use-installed-package is
+# recognized.
+if [ $# = 1 -a "$1" = --use-installed-package ] ; then
+    use_installed_package=true
+else
+    use_installed_package=false
+fi
+
+# Set the octave executable and the octave options, when the
+# corresponding variables are absent from the environment.
+: ${octave:=octave-cli}
+: ${octave_options:="--no-history --silent --no-init-file --no-window-system"}
+
+# Read extra variables definitions
+if [ -f debian/checkvars ] ; then
+    . debian/checkvars
+fi
+
+[ -e PKG_ADD ] && mv PKG_ADD PKG_ADD.bak
+
+echo Checking package...
+
+unit_test_regex='^%!\(assert\|test\|error\|fail\|xtest\|warning\)'
+
+# Extract tests from installed m files
+tmp_script=$(mktemp)
+tmp_results=$(mktemp)
+cat >$tmp_script <<EOF
+fid = fopen ("$tmp_results", "w");
+disp ('Checking m files ...');
+[usr_pkg, sys_pkg] = pkg ('list');
+for i = 1 : length (sys_pkg)
+    name = sys_pkg {1, i}.name;
+    ## Do not load the package being checked, sinc
+    ## old, incompatible version may be installed.
+    if strcmp ("$package", name) != 1
+        pkg ('load', name);
+    endif
+endfor
+EOF
+
+# For the unit test, we use alternatively the files from the built
+# package under debian/$package (intended for building the package) or
+# the package installed in the system (intended for autopkgtest).
+if [ $use_installed_package = true ] ; then
+    cat >>$tmp_script <<EOF
+pkg ('load', '$package');
+EOF
+else
+    cat >>$tmp_script <<EOF
+addpath (genpath (sprintf ('%s/debian', pwd ())));
+EOF
+fi
+
+excluded_files_expr=$(for i in $DH_OCTAVE_EXCLUDE_TEST ; do
+                          echo " -a ! -name $i " ;
+                      done)
+
+# If the environment variable DH_OCTAVE_TEST_OPT is not set and the
+# environment variable DEB_BUILD_OPTIONS contains the term "terse",
+# then the tests will be run in "quiet" mode.
+if test -z "$DH_OCTAVE_TEST_OPT" ; then
+    case "$DEB_BUILD_OPTIONS" in
+        *terse*) DH_OCTAVE_TEST_OPT=quiet ;;
+    esac
+fi
+
+for f in $(find inst/ -name \*.m $excluded_files_expr | grep -v /private/) ; do
+    if grep -q "$unit_test_regex" $f ; then
+        cat >>$tmp_script <<EOF
+disp ("[$f]");
+[npass, ntest, nxfail, nskip] = test ("$f",
+                                      ifelse (strcmp ("$DH_OCTAVE_TEST_OPT", ""),
+                                              "verbose", "$DH_OCTAVE_TEST_OPT"));
+printf ("%d test%s, %d passed, %d known failure%s, %d skipped\n",
+        ntest, ifelse (ntest > 1, "s", ""), npass, nxfail,
+        ifelse (nxfail > 1, "s", ""), nskip);
+fprintf (fid, "%s %d %d %d %d\n", "$f", ntest, npass, nxfail, nskip);
+EOF
+    fi
+done
+
+# Extract tests from .cc and .cpp files - these are not installed, but
+# the compiled .oct files are.
+#
+# We search for the tests in the .cc and .cpp files, but invoke the .oct files;
+# this means we must add generate a loadpath starting at the current
+# directory and source PKG_ADD files (they might add autoload()
+# directives)
+
+# We deactivate the warning about relative paths used for the PKG_ADD file.
+cat >>$tmp_script <<EOF
+disp ('Checking C++ files ...');
+[usr_pkg, sys_pkg] = pkg ('list');
+for i = 1 : length (sys_pkg);
+    name = sys_pkg {1, i}.name;
+    ## Do not load the package being checked, sinc
+    ## old, incompatible version may be installed.
+    if strcmp ("$package", name) != 1
+        pkg ('load', name);
+    endif
+endfor
+warning ('off', 'Octave:autoload-relative-file-name');
+EOF
+if [ -f PKG_ADD ] ; then
+    echo "source('PKG_ADD');" >> $tmp_script
+fi
+if [ -f PKG_ADD.bak ] ; then
+    echo "source('PKG_ADD.bak');" >> $tmp_script
+fi
+if [ -d src ] ; then
+    for f in $(find src/ \( -name \*.cc -o -name \*.cpp \) $excluded_files_expr) ; do
+        if grep -q "$unit_test_regex" $f ; then
+            cat >>$tmp_script <<EOF
+disp ("[$f]");
+[npass, ntest, nxfail, nskip] = test ("$f",
+                                      ifelse (strcmp ("$DH_OCTAVE_TEST_OPT", ""),
+                                              "verbose", "$DH_OCTAVE_TEST_OPT"));
+printf ("%d test%s, %d passed, %d known failure%s, %d skipped\n",
+        ntest, ifelse (ntest > 1, "s", ""), npass, nxfail,
+        ifelse (nxfail > 1, "s", ""), nskip);
+fprintf (fid, "%s %d %d %d %d\n", "$f", ntest, npass, nxfail, nskip);
+EOF
+        fi
+    done
+fi
+
+if [ -f debian/check.m ] ; then
+    cat >>$tmp_script <<EOF
+disp ("Run tests in debian/check.m");
+try
+    source ("debian/check.m");
+    fprintf (fid, "debian/check.m 1 1 0 0\n");
+catch
+    fprintf (fid, "debian/check.m 1 0 1 0\n");
+end_try_catch
+fclose (fid);
+EOF
+fi
+
+eval $DH_OCTAVE_TEST_ENV $octave $octave_options $tmp_script
+rm -f $tmp_script
+
+if [ -e PKG_ADD.bak ] ; then
+    mv PKG_ADD.bak PKG_ADD
+fi
+
+ntest=0
+npass=0
+nxfail=0
+nskip=0
+while read f1 f2 f3 f4 f5 ; do
+    ntest=$((ntest + f2))
+    npass=$((npass + f3))
+    nxfail=$((nxfail + f4))
+    nskip=$((nskip + f5))
+done < $tmp_results
+rm -f $tmp_results
+echo "Summary: $ntest tests, $npass passed, $nxfail known failures, $nskip skipped"
+if [ "$ntest" -gt $((npass + nxfail + nskip)) ] ; then
+    echo "Some tests failed.  Giving up..." 1>&2
+    exit 1
+fi

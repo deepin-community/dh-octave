@@ -1,0 +1,92 @@
+#!/usr/bin/perl -w
+
+# dh_octave_examples: Install examples files.
+# This file is part of the dh-octave Debian package.
+
+# Copyright (c) 2018  Rafael Laboissière <rafael@debian.org>
+#
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License along
+# with this program; if not, write to the Free Software Foundation,
+# Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301, USA.
+
+=encoding utf8
+
+=head1 NAME
+
+dh_octave_exmaples - install examples files for an Octave-Forge package
+
+=cut
+
+use strict;
+use File::Find;
+use Debian::Debhelper::Dh_Lib;
+
+init ();
+
+=head1 SYNOPSIS
+
+B<dh_octave_examples> [S<I<debhelper options>>]
+
+=head1 DESCRIPTION
+
+B<dh_octave_examples> create a symbolic link in /usr/share/doc/ for
+the upstream examples files.
+
+=cut
+
+foreach my $pkg (@{$dh{DOPACKAGES}}) {
+
+    my $tmpdir = "debian/$pkg";
+
+    my @examplesdir;
+    find (sub {
+		  return unless -d;
+		  return unless /^examples$/;
+		  push @examplesdir, $File::Find::name;
+	      }, "$tmpdir/usr/share");
+
+    if ($#examplesdir > -1) {
+
+	if ($#examplesdir > 0) {
+	    warn "dh_octave_examples:W: found more than one examples directory for package $pkg";
+	}
+	(my $src = $examplesdir[0]) =~ s/^$tmpdir//;
+
+	make_symlink ("/usr/share/doc/$pkg/examples", $src, tmpdir ($pkg));
+
+    }
+
+}
+
+=head1 SEE ALSO
+
+L<debhelper(7)>, L<dh(1)>, L<dh_octave_clean(1)>, L<dh_octave_check(1)>,
+L<dh_octave_version(1)>, L<dh_octave_changelogs(1)>, L<dh_octave_substvar(1)>
+
+This program is meant to be used together with debhelper for Debian
+packages derived from Octave-Forge packages.
+It is recommended to enable it by adding the dh-sequence-octave
+virtual package to Build-Depends, Build-Depends-Arch or
+Build-Depends-Indep.
+This is equivalent to adding dh-octave to the same field and adding
+--with=octave to the dh sequencer in debian/rules, except that only
+-arch/-indep/profiled builds are affected.
+This is also slightly more simple in the most common case.
+
+=head1 AUTHOR
+
+Rafael Laboissière <rafael@debian.org>
+
+=cut
+
+exit;
