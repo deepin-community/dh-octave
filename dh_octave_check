@@ -133,7 +133,7 @@ disp ('Checking m files ...');
 [usr_pkg, sys_pkg] = pkg ('list');
 for i = 1 : length (sys_pkg)
     name = sys_pkg {1, i}.name;
-    ## Do not load the package being checked, sinc
+    ## Do not load the package being checked, since
     ## old, incompatible version may be installed.
     if strcmp ("$package", name) != 1
         pkg ('load', name);

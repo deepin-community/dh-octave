@@ -90,6 +90,8 @@ if (-f "DESCRIPTION") {
                 $ver =~ s/(\d)/$epoch$1/;
                 $depends {"octave-$pkg"} = $ver;
             } else {
+		## Remove trailing newline, see Bug#1025714
+		chomp;
                 $depends {"octave-$_"} = "";
             }
         } grep {not /^octave/i} split (", ", $deps);
@@ -104,6 +106,7 @@ if (-f "DESCRIPTION") {
 ### Get the current ABI verson of Octave
 my $api_version = qx {/usr/bin/mkoctfile --print API_VERSION};
 $api_version =~ s/api-v//;
+chomp $api_version;
 
 foreach my $package (@{$dh{DOPACKAGES}}) {
     delsubstvar ($package, 'octave:Depends');

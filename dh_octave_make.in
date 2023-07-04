@@ -88,6 +88,9 @@ Rafael Laboissière E<lt>rafael@debian.orgE<gt>
 
 =cut
 
+use HTML::Parser;
+use LWP::Simple;
+
 ### Get program name
 (my $prog = $0) =~ s|.*/||;
 
@@ -129,12 +132,16 @@ sub check ($) {
 
 ### Read the fields present in the DESCRIPTION file
 open (FID, "< DESCRIPTION");
-/([^:]+): (.*)/ and $pkgdata{$1} = $2 while (<FID>);
+/([^:]+): (.*)/
+    and $field = ucfirst ($1)
+    and $pkgdata{$field} = $2
+  while (<FID>);
 close FID;
 
 ### Check for some mandatory fields
 check ("Name");
 my $name = lc $pkgdata{Name};
+$name =~ s/\s+$//; ## Drop extraneuous trailing whitespace
 check ("Version");
 my $version = $pkgdata{Version};
 check ("Title");
@@ -155,7 +162,8 @@ my $compat = #Compat#;
 ### Create the debian/watch file.
 writefile (">", "debian/watch",
            "version=4
-http://sf.net/octave/$name-(.+)\\.tar\\.gz
+https://gnu-octave.github.io/packages/$name/	\
+  https://downloads.sourceforge.net/project/octave/Octave%20Forge%20Packages/Individual%20Package%20Releases/$name-(.+).tar.gz
 ");
 
 ### Create the debian/changelog file.
@@ -199,14 +207,18 @@ if ($architecture eq "any") {
     $shlibs = ", \${shlibs:Depends}";
 }
 
+$sysbuilddep = exists $pkgdata{BuildRequires}
+               ? ", $pkgdata{BuildRequires}"
+               : "";
+
 writefile (">", "debian/control",
            "Source: octave-$name
 Section: math
 Priority: optional
 Maintainer: Debian Octave Group <team+pkg-octave-team\@tracker.debian.org>
-${uploaders}Build-Depends: debhelper-compat (= $compat), dh-octave (>= #Version#), dh-sequence-octave
+${uploaders}Build-Depends: debhelper-compat (= $compat), dh-octave (>= #Version#), dh-sequence-octave$sysbuilddep
 Standards-Version: #Standards-Version#
-Homepage: https://octave.sourceforge.io/$name/
+Homepage: https://gnu-octave.github.io/packages/$name/
 Vcs-Git: #Vcs-Git#
 Vcs-Browser: #Vcs-Browser#
 Testsuite: autopkgtest-pkg-octave
@@ -236,7 +248,8 @@ unless (-e "debian/copyright") {
     chomp $year;
 
     writefile (">>", "debian/copyright",
-	       "Files: debian/*
+	       "
+Files: debian/*
 Copyright: $year $author
 License: GPL-3+
 
@@ -265,11 +278,98 @@ License: GPL-3+
 makedir "debian/upstream";
 writefile (">", "debian/upstream/metadata",
     "Name: $title
-Contact: $maintainer
-Bug-Database: https://savannah.gnu.org/bugs/?group=octave
-Bug-Submit: https://savannah.gnu.org/bugs/?func=additem&group=octave
-Repository-Browse: https://octave.sourceforge.io/pkg-repository/$name/
-");
+Contact: $maintainer\n");
+
+### Gather upstream information from gnu-octave.github.io
+my $response = LWP::Simple::get ("https://gnu-octave.github.io/packages/$name/");
+
+my $in_li = 0;
+my $in_a = 0;
+my $href;
+my %upstream_info;
+
+sub start {
+    my ($tag, $attr) = @_;
+    if ($tag =~ /^li$/i) {
+	$in_li  = 1;
+    }
+    if ($in_li && $tag =~ /^a$/i) {
+	$in_a  = 1;
+	$href = $attr->{'href'};
+    }
+}
+
+sub end {
+    my ($tag) = @_;
+    if ($tag =~ /^li$/i) {
+	$in_li  = 0;
+    }
+    if ($tag =~ /^a$/i) {
+	$in_a  = 0;
+    }
+}
+
+sub text {
+    my ($text) = @_;
+    if ($in_a) {
+	if ($text =~ /^\s*news\s*$/) {
+            $upstream_info{news} = $href;
+        }
+	if ($text =~ /^\s*repository\s*$/) {
+            $upstream_info{repository} = $href;
+        }
+	if ($text =~ /^\s*(package documentation|function reference)\s*$/) {
+            $upstream_info{documentation} = $href;
+        }
+	if ($text =~ /^\s*report (a |)problem( or bugs|)\s*$/) {
+            $upstream_info{bug_database} = $href;
+        }
+    }
+}
+
+if (defined $response) {
+
+    my $p = HTML::Parser->new(
+        api_version     => 3,
+        start_h         => [\&start, "tagname, attr"],
+        end_h           => [\&end,   "tagname"],
+        text_h          => [\&text,   "dtext"],
+
+    );
+
+    $p->parse($response);
+
+    if (defined $upstream_info{bug_database}) {
+	my $bug_url = $upstream_info{bug_database};
+        writefile (">>", "debian/upstream/metadata",
+                   "Bug-Database: $bug_url\n");
+	if ($bug_url =~ m{^(.*github.com/.*/issues)/*$}) {
+            writefile (">>", "debian/upstream/metadata",
+                       "Bug-Submit: $1/new\n");
+	}
+    }
+    if (defined $upstream_info{news}) {
+        writefile (">>", "debian/upstream/metadata",
+                   "Changelog: $upstream_info{news}\n");
+    }
+    if (defined $upstream_info{repository}) {
+	my $repo_url = $upstream_info{repository};
+	if ($repo_url =~ m{^(.*github.com/.*[^/])/*$}) {
+            writefile (">>", "debian/upstream/metadata",
+                       "Repository: $1.git\n");
+	}
+	if ($repo_url =~ m{^(.*gitlab.com/.*[^/])/*$}) {
+            writefile (">>", "debian/upstream/metadata",
+                       "Repository: $1.git\n");
+	}
+        writefile (">>", "debian/upstream/metadata",
+                   "Repository-Browse: $repo_url\n");
+    }
+    if (defined $upstream_info{documentation}) {
+        writefile (">>", "debian/upstream/metadata",
+                   "Documentation: $upstream_info{documentation}\n");
+    }
+}
 
 ### Create the debian/gbp.conf file.
 writefile (">", "debian/gbp.conf", "[DEFAULT]

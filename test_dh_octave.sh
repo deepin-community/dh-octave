@@ -91,8 +91,15 @@ test_dh_octave_clean_no_src_dir() {
                  "$(cat stdout stderr | grep src: | sed 's/.*src: //')"
 }
 
+test_dh_octave_clean_remove_tst() {
+    tst_file=src/test.cc-tst
+    has $tst_file ""
+    run dh_octave_clean
+    assertFalse "test -f $tst_file"
+}
+
 test_dh_octave_clean_with_src_Makefile() {
-    has src/Makefile "clean:\n	@echo done"
+    has src/Makefile "distclean:\n	@echo done"
     run dh_octave_clean
     assertEquals 0 "$exitstatus"
     assertEquals "done" "$(cat stdout stderr| grep done)"
