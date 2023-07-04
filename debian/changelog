@@ -1,8 +1,86 @@
-dh-octave (1.2.0) UNRELEASED; urgency=medium
+dh-octave (1.5.0) unstable; urgency=medium
 
-  * update
+  * Upload to unstable
 
- -- Debian Octave Group <team+pkg-octave-team@tracker.debian.org>  Thu, 16 Jun 2022 11:35:01 +0800
+  * dh_octave_make.in:
+    + Ensure a blank like before "Files: debian/*" stanza
+    + Get URL documentation from "function reference" link
+
+ -- Rafael Laboissière <rafael@debian.org>  Tue, 13 Jun 2023 17:45:46 -0300
+
+dh-octave (1.4.0) experimental; urgency=medium
+
+  * dh_octave_make.in: Add upstream BuildRequires field to Build-Depends
+
+ -- Rafael Laboissière <rafael@debian.org>  Sun, 30 Apr 2023 10:24:51 -0300
+
+dh-octave (1.3.1) experimental; urgency=medium
+
+  * dh_octave_make.in: Fix regex for finding the upstream bug database
+
+ -- Rafael Laboissière <rafael@debian.org>  Sun, 26 Mar 2023 02:59:11 -0300
+
+dh-octave (1.3.0) experimental; urgency=medium
+
+  * dh_octave_make.in:
+    + Use Homepage at gnu-octave.github.io
+    + Drop extraneuous trailing whitespace from package name
+  * Get upstream metadata from gnu-octave.github.io
+    + dh_octave_make.in: Parse upstream homepage for the package
+    + d/control: Include dependencies on needed Perl modules
+
+ -- Rafael Laboissière <rafael@debian.org>  Sat, 25 Mar 2023 15:58:58 -0300
+
+dh-octave (1.2.7) unstable; urgency=medium
+
+  * Annotate Build-Depends on shunit2 as <!nocheck> (Closes: #1029975)
+  * Update standards version to 4.6.2, no changes needed.
+
+ -- Sébastien Villemot <sebastien@debian.org>  Tue, 31 Jan 2023 15:25:13 +0100
+
+dh-octave (1.2.6) unstable; urgency=medium
+
+  * dh_octave_substvar: Remove trailing newline from octave-abi-N in
+    ${shlibs:Depends}
+
+ -- Sébastien Villemot <sebastien@debian.org>  Mon, 19 Dec 2022 16:45:03 +0100
+
+dh-octave (1.2.5) unstable; urgency=medium
+
+  * dh_octave_substvar: Remove trailing newline from package names
+    present in Depends (Closes: #1025714)
+
+ -- Rafael Laboissière <rafael@debian.org>  Thu, 08 Dec 2022 20:03:25 -0300
+
+dh-octave (1.2.4) unstable; urgency=medium
+
+  * dh_octave_make.in: Use new URL at gnu-octave.github.io for d/watch
+
+ -- Rafael Laboissière <rafael@debian.org>  Wed, 14 Sep 2022 07:58:35 -0300
+
+dh-octave (1.2.3) unstable; urgency=medium
+
+  * Use distclean target for cleaning files in upstream src directory
+    + dh_octave_clean: Ditto
+    + test_dh_octave.sh: Adjust unit test
+  * test_dh_octave.sh: Add unit test for testing the removal of src/*-tst files
+
+ -- Rafael Laboissière <rafael@debian.org>  Wed, 06 Jul 2022 04:51:08 -0300
+
+dh-octave (1.2.2) unstable; urgency=medium
+
+  * dh_octave_clean: Remove src/*-tst files
+
+ -- Rafael Laboissière <rafael@debian.org>  Tue, 05 Jul 2022 10:28:19 -0300
+
+dh-octave (1.2.1) unstable; urgency=medium
+
+  * dh_octave_make.in: Ignore case of field names in the DESCRIPTION file
+  * d/control: Build-depends on octave-dev
+    This is necessary because the command octave-config is used in
+    test_dh_octave.sh.
+
+ -- Rafael Laboissière <rafael@debian.org>  Sat, 18 Jun 2022 06:08:22 -0300
 
 dh-octave (1.2.0) unstable; urgency=medium
 

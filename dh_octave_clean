@@ -47,23 +47,24 @@ unlink ("local-list");
 
 =pod
 
-It also cleans any F<inst/*-api-v*>, F<src/*.o> and F<src/*.oct> files
-left over from the build process.
+It also cleans any F<inst/*-api-v*>, F<src/*.o>, F<src/*.oct> and
+F<src/*-tst> files left over by the build process.
 
 =cut
 
 rmtree $_ foreach glob "inst/*-api-v*";
 unlink $_ foreach glob "src/*.o";
 unlink $_ foreach glob "src/*.oct";
+unlink $_ foreach glob "src/*-tst";
 
 =pod
 
-Finally, it runs B<make clean> in the F<src> directory, if it exists, in
-order to do further cleaning.
+Finally, it runs both B<make clean> and B<make distclean> in the
+F<src> directory, if it exists, in order to do further cleaning.
 
 =cut
 
-complex_doit ("make -k -C src clean || true");
+complex_doit ("make -k -C src clean distclean || true");
 
 =head1 SEE ALSO
 
