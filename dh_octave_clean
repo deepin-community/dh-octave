@@ -59,11 +59,13 @@ unlink $_ foreach glob "src/*-tst";
 
 =pod
 
-Finally, it runs both B<make clean> and B<make distclean> in the
-F<src> directory, if it exists, in order to do further cleaning.
+Finally, it runs both B<make clean> and B<make distclean> in both the
+top-level and the F<src> directory, if it exists, in order to do
+further cleaning.
 
 =cut
 
+complex_doit ("make -k clean distclean || true");
 complex_doit ("make -k -C src clean distclean || true");
 
 =head1 SEE ALSO

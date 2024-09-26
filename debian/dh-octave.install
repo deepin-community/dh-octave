@@ -3,6 +3,7 @@
 buildsystem.pm =>	usr/share/perl5/Debian/Debhelper/Buildsystem/octave.pm
 sequence.pm =>		usr/share/perl5/Debian/Debhelper/Sequence/octave.pm
 install-pkg.m		usr/share/dh-octave/
+clean-docdir		usr/share/dh-octave/
 dh_octave_clean		usr/bin/
 dh_octave_substvar	usr/bin/
 dh_octave_make		usr/bin/

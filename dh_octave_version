@@ -1,6 +1,6 @@
 #!/bin/sh
 
-# Copyright © 2018 Rafael Laboissière <rafael@debian.org>
+# Copyright © 2018, 2023 Rafael Laboissière <rafael@debian.org>
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -55,6 +55,9 @@ This is also slightly more simple in the most common case.
 Rafael Laboissière <rafael@debian.org>
 
 =cut
+
+# Exit immediately on error
+set -e
 
 echo -n "Checking the Octave version... "
 
