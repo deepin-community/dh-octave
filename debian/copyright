@@ -4,7 +4,7 @@ Upstream-Contact: Debian Octave Group <team+pkg-octave-team@tracker.debian.org>
 Source: https://salsa.debian.org/pkg-octave-team/dh-octave.git
 
 Files: *
-Copyright: 2018-2022  Rafael Laboissière <rafael@debian.org>
+Copyright: 2018-2024  Rafael Laboissière <rafael@debian.org>
 License: GPL-3+
  This program is free software; you can redistribute it and/or modify
  it under the terms of the GNU General Public License as published by

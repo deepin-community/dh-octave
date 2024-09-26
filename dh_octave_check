@@ -4,7 +4,7 @@
 # This file is part of the dh-octave Debian package and was also part
 # of the deprecated octave-pkg-dev package.
 
-# Copyright (c) 2018  Rafael Laboissière <rafael@debian.org>
+# Copyright (c) 2018, 2023  Rafael Laboissière <rafael@debian.org>
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -96,6 +96,21 @@ This is also slightly more simple in the most common case.
 Rafael Laboissière <rafael@debian.org>
 
 =cut
+
+# Exit immediately on error
+set -e
+
+# Cleanup function fr files and directories created via mktemp
+cleanup ()
+{
+    rm -f $tmp_script $tmp_results
+    # Avoid deletion of precious /home/* directories
+    echo "$HOME" | grep -qv ^/home && rm -rf $HOME || true
+}
+trap cleanup EXIT
+
+# Set HOME to a writeable, temporary directory
+export HOME=$(mktemp -d)
 
 # Get the current Octave package name
 package=$(grep ^Name: DESCRIPTION | sed -e 's/Name: \(.*\)/\L\1/')
@@ -193,15 +208,6 @@ done
 # We deactivate the warning about relative paths used for the PKG_ADD file.
 cat >>$tmp_script <<EOF
 disp ('Checking C++ files ...');
-[usr_pkg, sys_pkg] = pkg ('list');
-for i = 1 : length (sys_pkg);
-    name = sys_pkg {1, i}.name;
-    ## Do not load the package being checked, sinc
-    ## old, incompatible version may be installed.
-    if strcmp ("$package", name) != 1
-        pkg ('load', name);
-    endif
-endfor
 warning ('off', 'Octave:autoload-relative-file-name');
 EOF
 if [ -f PKG_ADD ] ; then
@@ -236,12 +242,14 @@ try
 catch
     fprintf (fid, "debian/check.m 1 0 1 0\n");
 end_try_catch
-fclose (fid);
 EOF
 fi
 
+echo "fclose (fid);" >> $tmp_script
+
+echo Run the unit tests...
 eval $DH_OCTAVE_TEST_ENV $octave $octave_options $tmp_script
-rm -f $tmp_script
+echo Done running the unit tests.
 
 if [ -e PKG_ADD.bak ] ; then
     mv PKG_ADD.bak PKG_ADD
@@ -257,9 +265,10 @@ while read f1 f2 f3 f4 f5 ; do
     nxfail=$((nxfail + f4))
     nskip=$((nskip + f5))
 done < $tmp_results
-rm -f $tmp_results
 echo "Summary: $ntest tests, $npass passed, $nxfail known failures, $nskip skipped"
 if [ "$ntest" -gt $((npass + nxfail + nskip)) ] ; then
     echo "Some tests failed.  Giving up..." 1>&2
     exit 1
 fi
+
+exit 0
